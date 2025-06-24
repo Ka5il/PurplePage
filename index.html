@@ -19,18 +19,7 @@
             user-select: none; /* Prevent text selection for better UX */
         }
         
-        /* Blurred overlay for the background */
-        body::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: inherit;
-            filter: blur(8px) brightness(0.7); /* Blur and darken background */
-            z-index: -1;
-        }
+
         
         /* Main search container styling */
         .search-container {
