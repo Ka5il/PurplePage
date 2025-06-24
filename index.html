@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Base styling for the page */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: url('background.png') no-repeat center center;
+            background-size: cover;
+            position: relative;
+            user-select: none; /* Prevent text selection for better UX */
+        }
+        
+        /* Blurred overlay for the background */
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: inherit;
+            filter: blur(8px) brightness(0.7); /* Blur and darken background */
+            z-index: -1;
+        }
+        
+        /* Main search container styling */
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.92); /* Semi-transparent white */
+            border-radius: 28px;
+            padding: 6px 6px 6px 15px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            width: 550px;
+            border: 1px solid rgba(223, 225, 229, 0.5);
+            backdrop-filter: blur(4px); /* Frosted glass effect */
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        /* Hover effect for search container */
+        .search-container:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        /* Common button styling for all buttons */
+        .toggle-btn, .search-btn, .drag-btn, .lock-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(248, 249, 250, 0.95);
+            border: none;
+            cursor: pointer;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #3c4043;
+            border-radius: 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            justify-content: center;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+        
+        /* Specific styles for engine toggle button */
+        .toggle-btn {
+            min-width: 100px; /* Increased width to accommodate "DuckDuckGo" */
+            margin-right: 12px;
+        }
+        
+        /* Search button styling */
+        .search-btn {
+            min-width: 90px;
+        }
+        
+        /* Drag handle button styling */
+        .drag-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            margin-left: 8px;
+            border-radius: 50%;
+        }
+        
+        /* Lock button styling */
+        .lock-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            z-index: 100;
+        }
+        
+        /* Button hover effects */
+        .toggle-btn:hover, .search-btn:hover, .drag-btn:hover, .lock-btn:hover {
+            background: rgba(241, 243, 244, 0.95);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            transform: translateY(-1px);
+        }
+        
+        /* Button active (click) effects */
+        .toggle-btn:active, .search-btn:active, .drag-btn:active, .lock-btn:active {
+            transform: translateY(1px);
+        }
+        
+        /* Icon styling inside buttons */
+        .toggle-btn img, .search-btn img, .drag-btn img, .lock-btn img {
+            width: 18px;
+            height: 18px;
+            transition: all 0.3s ease;
+            object-fit: contain;
+        }
+        
+        /* Icon animation on hover */
+        .toggle-btn:hover img, .search-btn:hover img {
+            transform: rotate(12deg) scale(1.1);
+        }
+        
+        .drag-btn:hover img, .lock-btn:hover img {
+            transform: scale(1.1);
+        }
+        
+        /* Search input field styling */
+        .search-input {
+            border: none;
+            outline: none;
+            padding: 12px;
+            flex-grow: 1;
+            font-size: 16px;
+            color: #202124;
+            background: transparent;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            margin-right: 8px;
+        }
+        
+        /* Placeholder styling */
+        .search-input::placeholder {
+            color: #9aa0a6;
+            transition: all 0.3s ease;
+        }
+        
+        /* Placeholder animation on focus */
+        .search-input:focus::placeholder {
+            opacity: 0.5;
+            transform: translateX(5px);
+        }
+        
+        /* Dropdown menu for search engines */
+        .engine-menu {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 8px;
+            display: none;
+            z-index: 10;
+            width: 140px; /* Increased width for better text fit */
+        }
+        
+        /* Menu positioned at the bottom (default) */
+        .engine-menu.bottom {
+            top: 60px;
+            left: 15px;
+        }
+        
+        /* Menu positioned at the top */
+        .engine-menu.top {
+            bottom: 60px;
+            left: 15px;
+        }
+        
+        /* Individual engine option in dropdown */
+        .engine-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        /* Hover effect for engine options */
+        .engine-option:hover {
+            background: #f1f3f4;
+        }
+        
+        /* Engine icons in dropdown */
+        .engine-option img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+        
+        /* Container for right-side buttons */
+        .buttons-group {
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Clock widget styling */
+        .clock-widget {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 28px;
+            padding: 12px 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            border: 1px solid rgba(223, 225, 229, 0.5);
+            backdrop-filter: blur(4px);
+            font-size: 18px;
+            font-weight: 500;
+            color: #3c4043;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+        }
+        
+        .clock-time {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .clock-date {
+            font-size: 14px;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+        
+        /* Hidden class for elements */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main search container -->
+    <div class="search-container" id="searchContainer">
+        <!-- Engine selector section -->
+        <div style="position: relative;">
+            <!-- Engine toggle button -->
+            <button class="toggle-btn" id="engineToggle">
+                <img src="icons/google.png" alt="Search Engine" id="engineIcon">
+                <span id="engineText">Google</span>
+            </button>
+            <!-- Engine dropdown menu -->
+            <div class="engine-menu bottom" id="engineMenu">
+                <div class="engine-option" data-engine="google">
+                    <img src="icons/google.png" alt="Google">
+                    <span>Google</span>
+                </div>
+                <div class="engine-option" data-engine="duckduckgo">
+                    <img src="icons/duckduckgo.png" alt="DuckDuckGo">
+                    <span>DuckDuckGo</span>
+                </div>
+                <div class="engine-option" data-engine="yandex">
+                    <img src="icons/yandex.png" alt="Yandex">
+                    <span>Yandex</span>
+                </div>
+                <div class="engine-option" data-engine="yahoo">
+                    <img src="icons/yahoo.png" alt="Yahoo">
+                    <span>Yahoo</span>
+                </div>
+            </div>
+        </div>
+        <!-- Search input field -->
+        <input type="text" class="search-input" placeholder="Search the web..." id="searchField">
+        <!-- Right-side buttons group -->
+        <div class="buttons-group">
+            <!-- Search button -->
+            <button class="search-btn" id="searchBtn">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0Mjg1RjQiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI4Ii8+PGxpbmUgeDE9IjIxIiB5MT0iMjEiIHgyPSIxNi42NSIgeTI9IjE2LjY1Ii8+PC9zdmc+" alt="Search">
+                <span>Search</span>
+            </button>
+            <!-- Drag handle -->
+            <button class="drag-btn" id="dragHandle">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSI5IiBjeT0iOSIgcj0iMSIvPjxjaXJjbGUgY3g9IjkiIGN5PSIxNSIgcj0iMSIvPjxjaXJjbGUgY3g9IjE1IiBjeT0iOSIgcj0iMSIvPjxjaXJjbGUgY3g9IjE1IiBjeT0iMTUiIHI9IjEiLz48L3N2Zz4=" alt="Drag">
+            </button>
+        </div>
+    </div>
+
+    <!-- Clock widget -->
+    <div class="clock-widget" id="clockWidget">
+        <div class="clock-time" id="clockTime"></div>
+        <div class="clock-date" id="clockDate"></div>
+    </div>
+
+    <!-- Lock button -->
+    <button class="lock-btn" id="lockBtn">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIxMSIgd2lkdGg9IjE4IiBoZWlnaHQ9IjExIiByeD0iMiIgcnk9IjIiLz48cGF0aCBkPSJNNyAxMVY3YTUgNSAwIDAgMSAxMCAwdjQiLz48L3N2Zz4=" alt="Lock" id="lockIcon">
+    </button>
+
+    <script>
+        // DOM element references
+        const toggleBtn = document.getElementById('engineToggle');
+        const engineMenu = document.getElementById('engineMenu');
+        const engineIcon = document.getElementById('engineIcon');
+        const engineText = document.getElementById('engineText');
+        const searchField = document.getElementById('searchField');
+        const searchBtn = document.getElementById('searchBtn');
+        const engineOptions = document.querySelectorAll('.engine-option');
+        const searchContainer = document.getElementById('searchContainer');
+        const dragHandle = document.getElementById('dragHandle');
+        const lockBtn = document.getElementById('lockBtn');
+        const lockIcon = document.getElementById('lockIcon');
+        const clockWidget = document.getElementById('clockWidget');
+        const clockTime = document.getElementById('clockTime');
+        const clockDate = document.getElementById('clockDate');
+        
+        // State variables
+        let currentEngine = 'google'; // Default search engine
+        let isDragging = false; // Flag for drag state
+        let isLocked = false; // Flag for lock state
+        let offsetX, offsetY; // Mouse position offsets for dragging
+        let clockDragging = false; // Flag for clock drag state
+        let clockOffsetX, clockOffsetY; // Mouse position offsets for clock dragging
+        
+        // Search engine configurations
+        const engines = {
+            google: {
+                name: 'Google',
+                icon: 'icons/google.png',
+                placeholder: 'Search with Google...',
+                url: 'https://www.google.com/search?q='
+            },
+            duckduckgo: {
+                name: 'DuckDuckGo',
+                icon: 'icons/duckduckgo.png',
+                placeholder: 'Search with DuckDuckGo...',
+                url: 'https://duckduckgo.com/?q='
+            },
+            yandex: {
+                name: 'Yandex',
+                icon: 'icons/yandex.png',
+                placeholder: 'Search with Yandex...',
+                url: 'https://yandex.ru/search/?text='
+            },
+            yahoo: {
+                name: 'Yahoo',
+                icon: 'icons/yahoo.png',
+                placeholder: 'Search with Yahoo...',
+                url: 'https://search.yahoo.com/search?p='
+            }
+        };
+        
+        /**
+         * Sets a cookie with the given name, value, and expiration days
+         * @param {string} name - Cookie name
+         * @param {string} value - Cookie value
+         * @param {number} days - Days until expiration
+         */
+        function setCookie(name, value, days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = name + "=" + value + ";" + expires + ";path=/";
+        }
+        
+        /**
+         * Gets a cookie value by name
+         * @param {string} name - Cookie name to retrieve
+         * @returns {string|null} The cookie value or null if not found
+         */
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length);
+            }
+            return null;
+        }
+        
+        /**
+         * Loads saved settings from cookies
+         */
+        function loadSettings() {
+            // Load saved search engine
+            const savedEngine = getCookie('searchEngine');
+            if (savedEngine && engines[savedEngine]) {
+                switchEngine(savedEngine);
+            }
+            
+            // Load saved position
+            const savedPosition = getCookie('searchPosition');
+            if (savedPosition) {
+                const pos = JSON.parse(savedPosition);
+                searchContainer.style.position = 'absolute';
+                searchContainer.style.left = pos.x + 'px';
+                searchContainer.style.top = pos.y + 'px';
+            }
+            
+            // Load saved clock position
+            const savedClockPosition = getCookie('clockPosition');
+            if (savedClockPosition) {
+                const pos = JSON.parse(savedClockPosition);
+                clockWidget.style.left = pos.x + 'px';
+                clockWidget.style.top = pos.y + 'px';
+            }
+            
+            // Load lock state
+            const savedLockState = getCookie('lockState');
+            if (savedLockState) {
+                isLocked = savedLockState === 'true';
+                updateLockState();
+            }
+        }
+        
+        /**
+         * Saves the current position of the search container to cookies
+         */
+        function savePosition() {
+            const rect = searchContainer.getBoundingClientRect();
+            const position = {
+                x: rect.left,
+                y: rect.top
+            };
+            setCookie('searchPosition', JSON.stringify(position), 30);
+        }
+        
+        /**
+         * Saves the current position of the clock widget to cookies
+         */
+        function saveClockPosition() {
+            const rect = clockWidget.getBoundingClientRect();
+            const position = {
+                x: rect.left,
+                y: rect.top
+            };
+            setCookie('clockPosition', JSON.stringify(position), 30);
+        }
+        
+        /**
+         * Switches the current search engine
+         * @param {string} engine - The engine key to switch to
+         */
+        function switchEngine(engine) {
+            currentEngine = engine;
+            engineIcon.src = engines[engine].icon;
+            engineText.textContent = engines[engine].name;
+            searchField.placeholder = engines[engine].placeholder;
+            engineMenu.style.display = 'none';
+            
+            // Save selection to cookies
+            setCookie('searchEngine', engine, 30);
+            
+            // Add animation feedback
+            toggleBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                toggleBtn.style.transform = 'scale(1)';
+            }, 150);
+        }
+        
+        /**
+         * Performs a search using the current search engine
+         */
+        function performSearch() {
+            const query = searchField.value.trim();
+            if (query) {
+                // Add visual feedback
+                searchField.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    // Redirect to search engine with query
+                    window.location.href = engines[currentEngine].url + encodeURIComponent(query);
+                }, 200);
+            }
+        }
+        
+        /**
+         * Updates the clock display
+         */
+        function updateClock() {
+            const now = new Date();
+            
+            // Format time
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            clockTime.textContent = `${hours}:${minutes}:${seconds}`;
+            
+            // Format date
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            clockDate.textContent = now.toLocaleDateString(undefined, options);
+        }
+        
+        /**
+         * Toggles the lock state
+         */
+        function toggleLock() {
+            isLocked = !isLocked;
+            updateLockState();
+            setCookie('lockState', isLocked.toString(), 30);
+        }
+        
+        /**
+         * Updates UI based on lock state
+         */
+        function updateLockState() {
+            if (isLocked) {
+                lockIcon.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIxMSIgd2lkdGg9IjE4IiBoZWlnaHQ9IjExIiByeD0iMiIgcnk9IjIiLz48cGF0aCBkPSJNNyAxMVY3YTUgNSAwIDAgMSAxMCAwdjQiLz48L3N2Zz4=";
+                dragHandle.classList.add('hidden');
+            } else {
+                lockIcon.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIxMSIgd2lkdGg9IjE4IiBoZWlnaHQ9IjExIiByeD0iMiIgcnk9IjIiLz48cGF0aCBkPSJNNyAxMVY3YTUgNSAwIDAgMSA5LjktMSIvPjwvc3ZnPg==";
+                dragHandle.classList.remove('hidden');
+            }
+        }
+        
+        /**
+         * Determines the best position for the engine menu (top or bottom)
+         */
+        function getBestMenuPosition() {
+            const toggleRect = toggleBtn.getBoundingClientRect();
+            const menuHeight = 180; // Approximate height of the menu (4 options * 40px each + padding)
+            
+            // Check if there's enough space below the toggle button
+            const spaceBelow = window.innerHeight - toggleRect.bottom;
+            if (spaceBelow >= menuHeight || toggleRect.top < spaceBelow) {
+                return 'bottom';
+            } else {
+                return 'top';
+            }
+        }
+        
+        // Event Listeners
+        
+        // Toggle engine dropdown menu
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event from bubbling to document
+            
+            // Determine best position for the menu
+            const position = getBestMenuPosition();
+            engineMenu.className = 'engine-menu ' + position;
+            
+            engineMenu.style.display = engineMenu.style.display === 'block' ? 'none' : 'block';
+        });
+        
+        // Handle engine selection from dropdown
+        engineOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                switchEngine(option.dataset.engine);
+            });
+        });
+        
+        // Close dropdown when clicking anywhere else
+        document.addEventListener('click', () => {
+            engineMenu.style.display = 'none';
+        });
+        
+        // Handle Enter key in search field
+        searchField.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+        
+        // Handle search button click
+        searchBtn.addEventListener('click', performSearch);
+        
+        // Drag and drop functionality for search container
+        
+        // Start dragging when handle is clicked
+        dragHandle.addEventListener('mousedown', (e) => {
+            if (isLocked) return;
+            isDragging = true;
+            const rect = searchContainer.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            searchContainer.style.cursor = 'grabbing';
+            e.preventDefault(); // Prevent text selection during drag
+        });
+        
+        // Handle movement during drag
+        document.addEventListener('mousemove', (e) => {
+            if (isLocked) return;
+            
+            if (isDragging) {
+                searchContainer.style.position = 'absolute';
+                searchContainer.style.left = (e.clientX - offsetX) + 'px';
+                searchContainer.style.top = (e.clientY - offsetY) + 'px';
+            }
+            
+            if (clockDragging) {
+                clockWidget.style.left = (e.clientX - clockOffsetX) + 'px';
+                clockWidget.style.top = (e.clientY - clockOffsetY) + 'px';
+            }
+        });
+        
+        // End dragging
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                searchContainer.style.cursor = '';
+                savePosition(); // Save new position
+            }
+            
+            if (clockDragging) {
+                clockDragging = false;
+                clockWidget.style.cursor = '';
+                saveClockPosition(); // Save new clock position
+            }
+        });
+        
+        // Clock drag functionality
+        clockWidget.addEventListener('mousedown', (e) => {
+            if (isLocked) return;
+            clockDragging = true;
+            const rect = clockWidget.getBoundingClientRect();
+            clockOffsetX = e.clientX - rect.left;
+            clockOffsetY = e.clientY - rect.top;
+            clockWidget.style.cursor = 'grabbing';
+            e.preventDefault(); // Prevent text selection during drag
+        });
+        
+        // Lock button click
+        lockBtn.addEventListener('click', toggleLock);
+        
+        // Initialize on page load
+        window.onload = function() {
+            // Preload engine icons for smoother switching
+            Object.values(engines).forEach(engine => {
+                const img = new Image();
+                img.src = engine.icon;
+            });
+            
+            // Load saved settings
+            loadSettings();
+            
+            // Start clock
+            updateClock();
+            setInterval(updateClock, 1000);
+        };
+    </script>
+</body>
+</html>
